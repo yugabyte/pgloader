@@ -156,7 +156,7 @@
 (defun copy-partial-batch (table-name columns
                            batch current-batch-rows current-batch-pos)
   "Copy some rows of the batch, not all of them."
-  (pomo:execute "BEGIN;")
+  ;; (pomo:execute "BEGIN;")
   (let ((stream
          (cl-postgres:open-db-writer pomo:*database* table-name columns)))
 
@@ -167,8 +167,8 @@
 
       ;; close-db-writer is the one signaling cl-postgres-errors
       (progn
-        (cl-postgres:close-db-writer stream)
-        (pomo:execute "COMMIT;")))
+        (cl-postgres:close-db-writer stream)))
+        ;;(pomo:execute "COMMIT;")))
 
     ;; return how many rows we loaded, which is current-batch-rows
     current-batch-rows))

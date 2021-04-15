@@ -251,6 +251,33 @@
     (pgsql-execute-with-timing section label fk-sql-list :log-level log-level)))
 
 
+;;;
+;;; creating primary key beforehand
+;;;
+(defun create-primary-key-constraint (pgconn table &key (label "Create primary key"))
+  (loop
+    :for index :in (table-index-list table)
+    :when (index-primary index)
+      :do
+	 (progn
+	   ;; ALTER TABLE ~a ADD CONSTRAINT PRIMARY KEY ~a table index-columns index
+	   ;; (log-message :notice "The type of index columsn is ~a" (type-of (index-columns index)))
+	   ;; (log-message :notice "SKSKSK the alter table command will be : ALTER TABLE ~a ADD PRIMARY KEY ~a " (table-name table) (index-columns index))
+	   ;; (log-message :notice "SKSKSS is the index primary ~a and columns ~a" (index-primary index) (index-columns index))  
+	   (pgloader.parser::execute-sql-code-block pgconn
+                                                    :pre
+						    (format-add-primary-key (format-table-name table) (index-columns index))
+                                                    "create primary key"))))
+	   
+      	   ;; (log-message :notice "SKSKS creating primary key constraint using index ~a" index))))
+
+(defun format-add-primary-key(formatted-table columns  &key (stream nil))
+  (list (format stream "ALTER TABLE ~a ADD PRIMARY KEY ~a" formatted-table (format nil "(~{~A~^, ~})" columns))
+	 ))
+
+(defun abc ()
+  (log-message :notice "Pringint to check the function creation"))
+
 
 ;;;
 ;;; Parallel index building.
@@ -262,21 +289,28 @@
    copying."
   (let* ((lp:*kernel* kernel))
     (loop
-       :for index :in (table-index-list table)
-       :for pkey := (multiple-value-bind (sql pkey)
-                        ;; we postpone the pkey upgrade of the index for later.
-                        (format-create-sql index)
+      :for index :in (my-remove-if (table-index-list table))
+      :for pkey := (multiple-value-bind (sql pkey)
+		       ;; we postpone the pkey upgrade of the index for later.
+		       (format-create-sql index)
+		     
+                     (lp:submit-task channel
+                                     #'pgsql-connect-and-execute-with-timing
+                                     ;; each thread must have its own connection
+                                     (clone-connection pgconn)
+                                     :post label sql)
+		     
+                     ;; return the pkey "upgrade" statement
+                     pkey)
+      :when pkey
+	:collect pkey)))
 
-                      (lp:submit-task channel
-                                      #'pgsql-connect-and-execute-with-timing
-                                      ;; each thread must have its own connection
-                                      (clone-connection pgconn)
-                                      :post label sql)
-
-                      ;; return the pkey "upgrade" statement
-                      pkey)
-       :when pkey
-       :collect pkey)))
+(defun my-remove-if (L)
+  (if (null L)
+      nil
+      (if (index-primary (first L))
+	  (my-remove-if (rest L))
+	  (cons (first L) (my-remove-if (rest L))))))
 
 
 ;;;
@@ -391,6 +425,9 @@
           (pomo:execute "set client_min_messages to warning;")
           (pomo:execute "listen seqs")
 
+	  ;;(when tables
+	   ;; (format t "create temp table reloids(oid) as values ~{('~a'::regclass)~^,~}"
+             ;;        (mapcar #'format-table-name tables)))
           (when tables
             (pomo:execute
              (format nil "create temp table reloids(oid) as values ~{('~a'::regclass)~^,~}"
@@ -428,9 +465,11 @@ BEGIN
 END;
 $$; " tables)))
                 (pomo:execute sql))
+	    ;; 
             ;; now get the notification signal
             (cl-postgres:postgresql-notification (c)
-              (parse-integer (cl-postgres:postgresql-notification-payload c))))))))
+	      (format t "SKSK Caught notification :  ~a~%" c)))))))
+              ;;(parse-integer (cl-postgres:postgresql-notification-payload c))))))))
 
 
 ;;;

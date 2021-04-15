@@ -463,6 +463,8 @@
            #:fetch-pgsql-catalog
            #:merge-catalogs
 
+	   #:abc
+	   #:create-primary-key-constraint
 	   #:create-indexes-in-kernel
            #:drop-indexes
            #:maybe-drop-indexes
@@ -744,6 +746,8 @@
                 #:truncate-tables
                 #:drop-pgsql-fkeys
                 #:create-pgsql-fkeys
+		#:create-primary-key-constraint
+		#:abc
 		#:create-indexes-in-kernel
                 #:format-vector-row
                 #:reset-sequences
@@ -773,6 +777,8 @@
 		#:pgsql-execute-with-timing
 		#:create-tables
                 #:truncate-tables
+		#:create-primary-key-constraint
+		#:abc
 		#:create-indexes-in-kernel
                 #:reset-sequences
                 #:comment-on-tables-and-columns)
@@ -796,6 +802,8 @@
 		#:create-views
                 #:drop-pgsql-fkeys
                 #:create-pgsql-fkeys
+		#:create-primary-key-constraint
+		#:abc
 		#:create-indexes-in-kernel
                 #:format-vector-row
                 #:reset-sequences)

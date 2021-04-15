@@ -360,17 +360,17 @@
         ;; handle failures and just continue
         (loop :for sql :in sql-list
            :do (progn
-                 (pomo:execute "savepoint pgloader;")
+                 ;; (pomo:execute "savepoint pgloader;")
                  (handler-case
                      (progn
                        (log-message log-level "~a" sql)
                        (pomo:execute sql)
-                       (pomo:execute "release savepoint pgloader;")
-                       (incf nb-ok))
-                   (cl-postgres:database-error (e)
-                     (incf nb-errors)
-                     (log-message :error "PostgreSQL ~a" e)
-                     (pomo:execute "rollback to savepoint pgloader;"))))))
+                       ;;(pomo:execute "release savepoint pgloader;")
+                       (incf nb-ok))))))
+                   ;;(cl-postgres:database-error (e)
+                   ;;  (incf nb-errors)
+                   ;;  (log-message :error "PostgreSQL ~a" e)
+                   ;;  (pomo:execute "rollback to savepoint pgloader;"))))))
 
     (when client-min-messages
       (unless (eq :redshift *pgconn-variant*)

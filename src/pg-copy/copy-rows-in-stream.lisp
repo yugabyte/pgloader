@@ -12,7 +12,7 @@
         (seconds 0))
     (handler-case
         (progn
-          (pomo:execute "BEGIN")
+          ;; (pomo:execute "BEGIN")
           (let* ((table-name (format-table-name table))
                  (copier
                   (handler-case
@@ -34,8 +34,8 @@
                           (incf rcount)
                           (incf bytes row-bytes)
                           (incf seconds row-seconds)))
-              (cl-postgres:close-db-writer copier)
-              (pomo:execute "COMMIT"))))
+              (cl-postgres:close-db-writer copier))))
+              ;;(pomo:execute "COMMIT"))))
 
       (postgresql-unavailable (condition)
         ;; We got disconnected, maybe because PostgreSQL is being restarted,

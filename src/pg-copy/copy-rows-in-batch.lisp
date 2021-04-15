@@ -42,7 +42,7 @@
     ;; ABORT steps then trigger a protocol error on a #\Z message.
     (handler-case
         (progn
-          (pomo:execute "BEGIN")
+          ;; (pomo:execute "BEGIN")
           (let* ((copier
                   (handler-case
                       (cl-postgres:open-db-writer db table-name columns)
@@ -56,13 +56,13 @@
                                              :condition c))))))
             (unwind-protect
                  (db-write-batch copier batch)
-              (cl-postgres:close-db-writer copier)
-              (pomo:execute "COMMIT"))))
+              (cl-postgres:close-db-writer copier))))
+              ;; (pomo:execute "COMMIT"))))
 
       ;; If PostgreSQL signals a data error, process the batch by isolating
       ;; erroneous data away and retrying the rest.
       (postgresql-retryable (condition)
-        (pomo:execute "ROLLBACK")
+        ;;(pomo:execute "ROLLBACK")
 
         (log-message :error "PostgreSQL [~s] ~a" table-name condition)
         ;; clean the current transaction before retrying new ones

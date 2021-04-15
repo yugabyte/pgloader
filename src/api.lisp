@@ -10,6 +10,11 @@
   (:report (lambda (err stream)
              (format stream "~a" (source-definition-error-mesg err)))))
 
+(define-condition sql-execution-error (error) ()
+  (:report (lambda (err stream)
+             (declare (ignore err))
+             (format stream "Could not execute the sql : see above."))))
+
 (define-condition cli-parsing-error (error) ()
   (:report (lambda (err stream)
              (declare (ignore err))
@@ -22,6 +27,7 @@
                      ;; start lines with 3 spaces because of trivial-backtrace
                      "~{No such file or directory: ~s~^~%   ~}"
                      (slot-value err 'filename-list)))))
+
 
 ;;;
 ;;; Helper functions to actually do things
