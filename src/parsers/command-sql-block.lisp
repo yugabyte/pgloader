@@ -76,7 +76,7 @@
                           :section section
                           :use-result-as-read t
                           :use-result-as-rows t)
-    (log-message :notice "Executing SQL block for ~a" label)
+    (log-message :notice "SKSKSK Executing SQL block for ~a and sql is ~a " label commands)
     (with-pgsql-transaction (:pgconn pgconn)
       (loop :for command :in commands
          :do (pgsql-execute command :client-min-messages :error)

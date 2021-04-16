@@ -409,7 +409,13 @@
                                   :foreign-keys foreign-keys
                                   :set-table-oids set-table-oids
                                   :materialize-views materialize-views)
-
+	  (loop
+	    :for table :in (optimize-table-copy-ordering catalog)
+	    :do
+	       (progn
+		 (create-primary-key-constraint (target-db copy) table)
+		 (log-message :notice "SKSK the table is ~a" table)))
+	  
           ;; if there's an AFTER SCHEMA DO/EXECUTE command, now is the time
           ;; to run it.
           (when after-schema

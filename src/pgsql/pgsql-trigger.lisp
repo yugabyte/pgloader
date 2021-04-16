@@ -56,6 +56,7 @@ END;"
     ;; note that we might have several on update column definitions on the
     ;; same table, we want a single trigger that takes care of them all.
     ;;
+
     (loop :for column :in (table-column-list table)
        :do (when (trigger-p (column-extra column))
              (let* ((trigger (column-extra column))

@@ -442,7 +442,14 @@
 
 (defmethod count-indexes ((table table) &key)
   "Count indexes in given TABLE."
-  (length (table-index-list table)))
+  (length (remove-primary-index (table-index-list table))))
+
+(defun remove-primary-index (L)
+  (if (null L)
+  nil
+  (if (index-primary (first L))
+      (remove-primary-index (rest L))
+      (cons (first L) (remove-primary-index (rest L))))))
 
 (defmethod count-indexes ((schema schema) &key)
   "Count indexes in given SCHEMA."
