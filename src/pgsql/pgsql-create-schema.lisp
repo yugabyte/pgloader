@@ -423,7 +423,7 @@
         (with-pgsql-connection (target)
           (set-session-gucs *pg-settings*)
           (pomo:execute "set client_min_messages to warning;")
-          (pomo:execute "listen seqs")
+          ;; (pomo:execute "listen seqs")
 
 	  ;;(when tables
 	   ;; (format t "create temp table reloids(oid) as values ~{('~a'::regclass)~^,~}"
@@ -461,10 +461,10 @@ BEGIN
     EXECUTE r.sql;
   END LOOP;
 
-  PERFORM pg_notify('seqs', n::text);
 END;
 $$; " tables)))
                 (pomo:execute sql))
+	    ;; PERFORM pg_notify('seqs', n::text);
 	    ;; 
             ;; now get the notification signal
             (cl-postgres:postgresql-notification (c)
