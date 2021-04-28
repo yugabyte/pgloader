@@ -1,7 +1,5 @@
-FROM debian:stable-slim as builder
-
-  RUN apt-get update \
-      && apt-get install -y --no-install-recommends \
+ROM centos:centos7 as builder
+RUN yum install epel-release -y && yum install -y \
         bzip2 \
         ca-certificates \
         curl \
@@ -15,33 +13,34 @@ FROM debian:stable-slim as builder
         openssl \
         patch \
         sbcl \
+        freetds \
+        freetds-devel \
         time \
         unzip \
         wget \
         cl-ironclad \
-        cl-babel \
-      && rm -rf /var/lib/apt/lists/*
+        cl-babel
+
+  RUN curl -SL https://github.com/Clozure/ccl/releases/download/v1.11.5/ccl-1.11.5-linuxx86.tar.gz \
+      | tar xz -C /usr/local/src/ \
+      && mv /usr/local/src/ccl/scripts/ccl64 /usr/local/bin/ccl
 
   COPY ./ /opt/src/pgloader
 
   RUN mkdir -p /opt/src/pgloader/build/bin \
       && cd /opt/src/pgloader \
-      && make clones save
+      && make CL=ccl DYNSIZE=256 clones save
 
-FROM debian:stable-slim
-
-  RUN apt-get update \
-      && apt-get install -y --no-install-recommends \
-        curl \
+FROM centos:centos7
+RUN yum install epel-release -y && yum install -y \
+              curl \
         freetds-dev \
         gawk \
+        git \
         libsqlite3-dev \
+        libssl1.1 \
         libzip-dev \
         make \
-        sbcl \
-        unzip \
-      && rm -rf /var/lib/apt/lists/*
-
-  COPY --from=builder /opt/src/pgloader/build/bin/pgloader /usr/local/bin
-
-  LABEL maintainer="Dimitri Fontaine <dim@tapoueh.org>"
+        sbcl\
+        unzip
+COPY --from=builder /opt/src/pgloader/build/bin/pgloader /usr/local/bin
