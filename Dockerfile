@@ -1,4 +1,4 @@
-ROM centos:centos7 as builder
+FROM centos:centos7 as builder
 RUN yum install epel-release -y && yum install -y \
         bzip2 \
         ca-certificates \
