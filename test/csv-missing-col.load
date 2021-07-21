@@ -1,6 +1,6 @@
 LOAD CSV
      FROM inline (a, b, c, d, e, f, g)
-     INTO postgresql:///pgloader
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
    TARGET TABLE missingcol (a, b, c, d, e, f, g)
 
      WITH truncate,

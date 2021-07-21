@@ -17,7 +17,7 @@
 
 LOAD CSV
      FROM inline (a, c, b, trailing)
-     INTO postgresql:///pgloader?errors (a, b, c)
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?errors (a, b, c)
 
      WITH fields optionally enclosed by '"',
           fields escaped by double-quote,

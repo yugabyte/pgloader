@@ -4,7 +4,7 @@ LOAD FIXED
         "CHARS.LETTERS" from 0 for 3,
         "CHARS.NUMBERS" from 3 for 3
     )
-    INTO postgresql:///pgloader?fixed
+    INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?fixed
     (
         "CHARS.LETTERS",
         "CHARS.NUMBERS"

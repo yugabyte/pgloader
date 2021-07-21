@@ -68,9 +68,9 @@ END;"
     ;; the real triggers and attach them to our table.
     ;;
     (loop :for tg-name :being :the :hash-keys :of triggers-by-name
-       :using (hash-value column-list)
-       :do (ecase tg-name
-             (:on-update-current-timestamp
-              (let ((trigger
-                     (build-trigger tg-name table column-list "BEFORE UPDATE")))
-                (push-to-end trigger (table-trigger-list table))))))))
+	    :using (hash-value column-list)
+	  :do (ecase tg-name
+		(:on-update-current-timestamp
+		 (let ((trigger
+			 (build-trigger tg-name table column-list "BEFORE UPDATE")))
+                   (push-to-end trigger (table-trigger-list table))))))))

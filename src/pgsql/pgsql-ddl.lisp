@@ -287,12 +287,12 @@
 (defmethod format-create-sql ((fk fkey) &key (stream nil) if-not-exists)
   (declare (ignore if-not-exists))
   (if (and (fkey-name fk) (fkey-condef fk))
-      (format stream "ALTER TABLE ~a ADD CONSTRAINT ~a ~a"
+      (format stream "ALTER TABLE ~a ADD CONSTRAINT ~a ~a;"
               (format-table-name (fkey-table fk))
               (fkey-name fk)
               (fkey-condef fk))
       (format stream
-              "ALTER TABLE ~a ADD ~@[CONSTRAINT ~a ~]FOREIGN KEY(~{~a~^,~}) REFERENCES ~a(~{~a~^,~})~:[~*~; ON UPDATE ~a~]~:[~*~; ON DELETE ~a~]"
+              "ALTER TABLE ~a ADD ~@[CONSTRAINT ~a ~]FOREIGN KEY(~{~a~^,~}) REFERENCES ~a(~{~a~^,~})~:[~*~; ON UPDATE ~a~]~:[~*~; ON DELETE ~a~];"
               (format-table-name (fkey-table fk))
               (fkey-name fk)            ; constraint name
               (fkey-columns fk)
@@ -316,7 +316,7 @@
 (defmethod format-create-sql ((trigger trigger) &key (stream nil) if-not-exists)
   (declare (ignore if-not-exists))
   (format stream
-          "CREATE TRIGGER ~a ~a ON ~a FOR EACH ROW EXECUTE PROCEDURE ~a.~a()"
+          "CREATE TRIGGER ~a ~a ON ~a FOR EACH ROW EXECUTE PROCEDURE ~a.~a();"
           (trigger-name trigger)
           (trigger-action trigger)
           (format-table-name (trigger-table trigger))

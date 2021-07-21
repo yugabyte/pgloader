@@ -5,34 +5,22 @@ OUT   = $(TESTS:.load=.out)
 REMOTE = archive.load bossa-all.load bossa.load census-places.load dbf-zip.load
 LOCAL  = $(filter-out $(REMOTE:.load=.out),$(OUT))
 REGRESS= allcols.load 		    \
-         csv-before-after.load 	    \
-         csv-districts.load 	    \
-         csv-parse-date.load 	    \
-         csv-error.load 	    \
+	 csv-districts.load 	    \
          csv-escape-mode.load 	    \
-         csv-filename-pattern.load  \
          csv-guess.load             \
          csv-header.load            \
          csv-json.load              \
          csv-keep-extra-blanks.load \
-         csv-missing-col.load       \
-         csv-non-printable.load     \
          csv-nulls.load             \
          csv-temp.load              \
          csv-trim-extra-blanks.load \
          csv-using-sexp.load        \
-         csv.load 		    \
-	 copy.load                  \
-	 copy-hex.load              \
-         dbf.load 		    \
-         errors.load 		    \
+         csv.load        \
          fixed.load 		    \
          fields-with-periods.load   \
          ixf.load 		    \
-         overflow.load 		    \
          partial.load 		    \
          serial.load 		    \
-         udc.load 		    \
          xzero.load
 
 # Those are not included in the tests because CCL doesn't have the cp866
@@ -43,7 +31,7 @@ REGRESS= allcols.load 		    \
 # dbf-8b.load
 
 PGLOADER ?= ../build/bin/pgloader
-PGSUPERUSER ?= postgres
+PGSUPERUSER ?= yugabyte
 
 EXTRA_OPTS =
 ifneq (,$(findstring ccl,$(CL)))
@@ -61,17 +49,19 @@ remote: prepare $(REMOTE:.load=.out)
 
 all: prepare $(OUT)
 
-prepare: bossa.sql sakila
-	-dropdb -U $(PGSUPERUSER) pgloader
-	-dropdb -U $(PGSUPERUSER) stocks
-	-dropdb -U $(PGSUPERUSER) ip4r
-	createdb -U $(PGSUPERUSER) -O `whoami` pgloader
-	createdb -U $(PGSUPERUSER) -O `whoami` stocks
-	createdb -U $(PGSUPERUSER) -O `whoami` ip4r
-	psql -d pgloader -c 'create schema expected'
-	psql -U $(PGSUPERUSER) -d pgloader -c 'create extension ip4r'
-	psql -U $(PGSUPERUSER) -d ip4r -c 'create extension ip4r'
-	psql -d stocks -f bossa.sql
+#prepare: bossa.sql sakila
+prepare:
+	-dropdb -h localhost -p 5433 -U $(PGSUPERUSER) pgloader -w
+	-dropdb -h localhost -p 5433 -U $(PGSUPERUSER) stocks -w
+	-dropdb -h localhost -p 5433 -U $(PGSUPERUSER) ip4r -w
+	createdb -h localhost -p 5433 -U $(PGSUPERUSER) pgloader -w
+	createdb -h localhost -p 5433 -U $(PGSUPERUSER) stocks -w
+	createdb -h localhost -p 5433 -U $(PGSUPERUSER) ip4r -w
+	psql -h localhost -p 5433 -U $(PGSUPERUSER) -d pgloader -c 'create schema expected' -w
+	psql -h localhost -p 5433 -U $(PGSUPERUSER) -d pgloader -c 'create schema csv' -w
+	psql -h localhost -p 5433 -U $(PGSUPERUSER) -d pgloader -c 'create extension ip4r' -w
+	psql -h localhost -p 5433 -U $(PGSUPERUSER) -d stocks -f bossa.sql -w
+	psql -h localhost -p 5433 -U $(PGSUPERUSER) -d ip4r -c 'create extension ip4r' -w
 
 errors.out: errors.load
 	-$(PGLOADER) $<
@@ -91,7 +81,7 @@ $(TMPDIR)/sakila-db/sakila-schema.sql: data/sakila-db.zip
 
 sakila: $(TMPDIR)/sakila-db/sakila-schema.sql
 	-dropdb -U $(PGSUPERUSER) sakila
-	-createdb -U $(PGSUPERUSER) -O `whoami` sakila
+	-createdb -U $(PGSUPERUSER)  sakila
 	-echo "DROP DATABASE sakila" | mysql -u root
 	echo "SOURCE $(TMPDIR)/sakila-db/sakila-schema.sql" | mysql -u root
 	echo "SOURCE $(TMPDIR)/sakila-db/sakila-data.sql"   | mysql -u root

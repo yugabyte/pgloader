@@ -1,6 +1,6 @@
 LOAD CSV
     FROM INLINE
-    INTO postgresql:///pgloader?nulls (f1, f2, f3)
+    INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?nulls (f1, f2, f3)
     WITH truncate,
     	 keep unquoted blanks,
          fields optionally enclosed by '"',

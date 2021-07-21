@@ -283,7 +283,7 @@
                             (worker-count     4)
                             (concurrency      1)
                             (multiple-readers nil)
-                            max-parallel-create-index
+                            (max-parallel-create-index 1)
 			    (truncate         nil)
 			    (disable-triggers nil)
 			    (data-only        nil)
@@ -414,7 +414,8 @@
 	    :do
 	       (progn
 		 (create-primary-key-constraint (target-db copy) table)
-		 (log-message :notice "SKSK the table is ~a" table)))
+		 ;;(log-message :notice "SKSK the table is ~a" table)
+		 ))
 	  
           ;; if there's an AFTER SCHEMA DO/EXECUTE command, now is the time
           ;; to run it.
@@ -422,7 +423,9 @@
             (pgloader.parser::execute-sql-code-block (target-db copy)
                                                      :pre
                                                      after-schema
-                                                     "after schema")))
+                                                     "after schema"))
+	  
+	  (log-message :notice "Done with prepare postgres and executing after-schema"))
       ;;
       ;; In case some error happens in the preparatory transaction, we
       ;; need to stop now and refrain from trying to load the data into
@@ -474,52 +477,56 @@
                                                           :use-result-as-read t
                                                           :use-result-as-rows t)
           (loop :repeat task-count
-             :do (destructuring-bind (task table seconds)
-                     (lp:receive-result copy-channel)
-                   (log-message :debug
-                                "Finished processing ~a for ~s ~50T~6$s"
-                                task (format-table-name table) seconds)
-                   (when (eq :writer task)
-                     ;;
-                     ;; Start the CREATE INDEX parallel tasks only when
-                     ;; the data has been fully copied over to the
-                     ;; corresponding table, that's when the writers
-                     ;; count is down to zero.
-                     ;;
-                     (decf (gethash table writers-count))
-                     (log-message :debug "writers-counts[~a] = ~a"
-                                  (format-table-name table)
-                                  (gethash table writers-count))
-
-                     (when (and create-indexes
-                                (zerop (gethash table writers-count)))
-
-                       (let* ((stats   pgloader.monitor::*sections*)
-                              (section (get-state-section stats :data))
-                              (table-stats (pgstate-get-label section table))
-                              (pprint-secs
-                               (pgloader.state::format-interval seconds nil)))
-                         ;; in CCL we have access to the *sections* dynamic
-                         ;; binding from another thread, in SBCL we access
-                         ;; an empty copy.
-                         (log-message :notice
-                                      "DONE copying ~a in ~a~@[ for ~d rows~]"
+		:do (destructuring-bind (task table seconds)
+			(lp:receive-result copy-channel)
+                      (log-message :debug
+                                   "Finished processing ~a for ~s ~50T~6$s"
+                                   task (format-table-name table) seconds)
+                      (when (eq :writer task)
+			;;
+			;; Start the CREATE INDEX parallel tasks only when
+			;; the data has been fully copied over to the
+			;; corresponding table, that's when the writers
+			;; count is down to zero.
+			;;
+			(decf (gethash table writers-count))
+			(log-message :debug "writers-counts[~a] = ~a"
                                      (format-table-name table)
-                                     pprint-secs
-                                     (when table-stats
-                                       (pgtable-rows table-stats))))
-                       (alexandria:appendf
-                        pkeys
-                        (create-indexes-in-kernel (target-db copy)
-                                                  table
-                                                  idx-kernel
-                                                  idx-channel)))))
-             :finally (progn
-                        (lp:end-kernel :wait nil)
-                        (return worker-count))))))
-
-    (log-message :info "Done with COPYing data, waiting for indexes")
-
+                                     (gethash table writers-count))
+			(when (zerop (gethash table writers-count))
+			  (let* ((stats   pgloader.monitor::*sections*)
+				 (section (get-state-section stats :data))
+				 (table-stats (pgstate-get-label section table))
+				 (pprint-secs
+				   (pgloader.state::format-interval seconds nil))
+				 ;; in CCL we have access to the *sections* dynamic
+                 ;; binding from another thread, in SBCL we access
+				 ;; an empty copy.
+				 (log-message :notice
+					      "DONE copying ~a in ~a~@[ for ~d rows~]"
+					      (format-table-name table)
+					      pprint-secs
+					      (when table-stats
+						(pgtable-rows table-stats))))))))
+		:finally (progn
+                           (lp:end-kernel :wait nil)
+                           (return worker-count))))))
+    
+    
+    (log-message :info "Done with COPYing data, Going to create indexes")
+    
+    (loop :for table :being :the :hash-keys :of writers-count
+	    :using (hash-value finished)
+	  :when (and create-indexes
+                     (zerop (gethash table writers-count)))
+	    :do
+	       (alexandria:appendf
+                pkeys
+                (create-indexes-in-kernel (target-db copy)
+                                          table
+                                          idx-kernel
+                                          idx-channel)))
+    
     (when create-indexes
       (let ((lp:*kernel* idx-kernel))
         ;; wait until the indexes are done being built...
@@ -528,11 +535,11 @@
                                                          :use-result-as-read t
                                                          :use-result-as-rows t)
           (loop :for count :below (count-indexes catalog)
-             :do (lp:receive-result idx-channel))
+		:do (lp:receive-result idx-channel))
           (lp:end-kernel :wait t)
           (log-message :info "Done waiting for indexes")
           (count-indexes catalog))))
-
+    
     ;;
     ;; Complete the PostgreSQL database before handing over.
     ;;
@@ -547,7 +554,7 @@
                              ;; good as it is
                              :create-triggers create-tables
                              :reset-sequences reset-sequences)
-
+    
     ;;
     ;; Time to cleanup!
     ;;

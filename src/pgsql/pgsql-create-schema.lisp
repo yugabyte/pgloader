@@ -272,7 +272,7 @@
       	   ;; (log-message :notice "SKSKS creating primary key constraint using index ~a" index))))
 
 (defun format-add-primary-key(formatted-table columns  &key (stream nil))
-  (list (format stream "ALTER TABLE ~a ADD PRIMARY KEY ~a" formatted-table (format nil "(~{~A~^, ~})" columns))
+  (list (format stream "ALTER TABLE ~a ADD PRIMARY KEY ~a;" formatted-table (format nil "(~{~A~^, ~})" columns))
 	 ))
 
 (defun abc ()

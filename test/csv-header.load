@@ -1,6 +1,6 @@
 LOAD CSV
      FROM INLINE
-     INTO postgresql:///pgloader?"group"
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?"group"
 
      WITH truncate,
           fields terminated by ',',

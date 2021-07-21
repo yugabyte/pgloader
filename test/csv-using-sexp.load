@@ -3,7 +3,7 @@
  */
 LOAD CSV
      FROM INLINE(id,f1)
-     INTO postgresql:///pgloader
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
    TARGET TABLE sexp
         (
           id,

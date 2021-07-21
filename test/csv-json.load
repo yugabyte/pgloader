@@ -1,6 +1,6 @@
 LOAD CSV
      FROM INLINE
-     INTO postgresql:///pgloader
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
      TARGET TABLE json
 
      WITH truncate,

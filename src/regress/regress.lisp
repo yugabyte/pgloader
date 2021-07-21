@@ -62,8 +62,11 @@
           (let* ((tname  (apply-identifier-case unqualified-table-name))
                  (drop   (format nil "drop table if exists expected.~a;"
                                  tname))
-                 (create (format nil "create table expected.~a(like ~a);"
-                                 tname tname)))
+		 ;; SURANJAN change the SQL here to create table as select * from.~a.~a limit 1
+		 (create (format nil "create table expected.~a as select * from ~a where 1=0;"
+				 tname tname)))
+		;;(create (format nil "create table expected.~a(like ~a);"
+                                 ;;tname tname)))
             (log-message :notice "~a" drop)
             (pomo:query drop)
             (log-message :notice "~a" create)

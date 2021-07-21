@@ -12,7 +12,7 @@
 
 LOAD CSV
      FROM inline (c, b)
-     INTO postgresql:///pgloader?serial (b, c)
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?serial (b, c)
 
      WITH fields optionally enclosed by '"',
           fields escaped by double-quote,

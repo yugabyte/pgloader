@@ -6,7 +6,7 @@
 
 LOAD CSV
     FROM inline (a, b, nil, t)
-    INTO postgresql:///pgloader?temp(a,b,nil,t)
+    INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?temp(a,b,nil,t)
 
     WITH fields terminated by ';'
 

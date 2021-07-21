@@ -4,7 +4,7 @@ LOAD COPY
             trackid, track, album, media, genre, composer,
             milliseconds, bytes, unitprice
           )
-     INTO postgresql:///pgloader
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
      TARGET TABLE track_full
 
      WITH truncate, drop indexes

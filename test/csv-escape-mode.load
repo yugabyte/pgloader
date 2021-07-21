@@ -20,7 +20,7 @@ LOAD CSV
     document_height, document_width, localstorage_size, sessionstorage_size, num_iframes,
     num_scripts, doctype, meta_viewport)
  
-    INTO postgresql:///pgloader
+    INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
     TARGET TABLE csv_escape_mode
          (
           id bigint using (identity pageid),

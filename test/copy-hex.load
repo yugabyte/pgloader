@@ -1,6 +1,6 @@
 LOAD COPY
      FROM inline
-     INTO postgresql:///pgloader?copyhex
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?copyhex
 
      WITH truncate,
           delimiter '\t',

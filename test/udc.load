@@ -16,7 +16,7 @@
 LOAD CSV
      FROM inline WITH ENCODING latin1
         (d, b, x, y)
-     INTO postgresql:///pgloader?udc
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?udc
         (
             b
           , c text using "constant value"

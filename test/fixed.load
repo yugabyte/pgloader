@@ -19,7 +19,7 @@ LOAD FIXED
            c from 18 for  8,
            d from 26 for 17 [null if blanks, trim right whitespace]
           )
-     INTO postgresql:///pgloader
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
    TARGET TABLE fixed
           (
              a, b,
@@ -27,7 +27,7 @@ LOAD FIXED
              d
           )
 
-     WITH truncate, drop indexes
+     WITH truncate
 
       SET client_encoding to 'latin1',
           work_mem to '14MB',

@@ -329,6 +329,60 @@
       (declare (ignore res))
       (update-stats section label :read (length sql-list) :secs secs))))
 
+(defun pgsql-execute-with-file-logging (filename sql
+                                  &key
+                                    (log-level :sql)
+				    client-min-messages
+                                    (on-error-stop t))
+  "Execute given SQL and log it to the filename."
+  (let ((sql-list  (alexandria::ensure-list sql))
+        (nb-ok     0)
+        (nb-errors 0))
+    (when client-min-messages
+      (unless (eq :redshift *pgconn-variant*)
+        (pomo:execute
+         (format nil "SET LOCAL client_min_messages TO ~a;"
+                 (symbol-name client-min-messages)))))
+
+    (if on-error-stop
+        (loop :for sql :in sql-list
+           :do (progn
+                 (log-message log-level "~a" sql)
+		 (with-open-file (str "./ddl.sql"
+					    :direction :output
+					    :if-exists :append
+					    :if-does-not-exist :create)
+			 (format str "~a,~%" sql))
+                 (pomo:execute sql))
+           ;; never executed in case of error, which signals out of here
+           :finally (incf nb-ok (length sql-list)))
+        ;; handle failures and just continue
+        (loop :for sql :in sql-list
+           :do (progn
+                 ;; (pomo:execute "savepoint pgloader;")
+                 (handler-case
+                     (progn
+		       (with-open-file (str "./ddl.sql"
+					    :direction :output
+					    :if-exists :append
+					    :if-does-not-exist :create)
+			 (format str "~a,~%" sql))
+                       (log-message log-level "EXECUTIN THE sql in transaction ~a" sql)
+                       (pomo:execute sql)
+                       ;;(pomo:execute "release savepoint pgloader;")
+                       (incf nb-ok))
+                   (cl-postgres:database-error (e)
+                     (incf nb-errors)
+                     (log-message :error "PostgreSQL ~a" e)
+                     ;;(pomo:execute "rollback to savepoint pgloader;")
+		     )))))
+
+    (when client-min-messages
+      (unless (eq :redshift *pgconn-variant*)
+        (pomo:execute (format nil "RESET client_min_messages;"))))
+
+    (values nb-ok nb-errors)))
+
 (defun pgsql-execute (sql
                       &key
                         (log-level :sql)
@@ -351,26 +405,36 @@
 
     (if on-error-stop
         (loop :for sql :in sql-list
-           :do (progn
-                 (log-message log-level "~a" sql)
-                 (pomo:execute sql))
+              :do (progn
+		    (log-message log-level "Executing ~a" sql)
+                    (with-open-file (str "./ddl.sql"
+					 :direction :output
+					 :if-exists :append
+					 :if-does-not-exist :create)
+		      (format str "~a~%" sql))
+                    (pomo:execute sql))
            ;; never executed in case of error, which signals out of here
            :finally (incf nb-ok (length sql-list)))
-
         ;; handle failures and just continue
         (loop :for sql :in sql-list
            :do (progn
                  ;; (pomo:execute "savepoint pgloader;")
                  (handler-case
                      (progn
-                       (log-message log-level "~a" sql)
+		       (with-open-file (str "./ddl.sql"
+					    :direction :output
+					    :if-exists :append
+					    :if-does-not-exist :create)
+			 (format str "~a~%" sql))
+                       (log-message log-level "Executing ~a" sql)
                        (pomo:execute sql)
                        ;;(pomo:execute "release savepoint pgloader;")
-                       (incf nb-ok))))))
-                   ;;(cl-postgres:database-error (e)
-                   ;;  (incf nb-errors)
-                   ;;  (log-message :error "PostgreSQL ~a" e)
-                   ;;  (pomo:execute "rollback to savepoint pgloader;"))))))
+                       (incf nb-ok))
+                   (cl-postgres:database-error (e)
+                     (incf nb-errors)
+                     (log-message :error "PostgreSQL ~a" e)
+                     ;;(pomo:execute "rollback to savepoint pgloader;")
+		     )))))
 
     (when client-min-messages
       (unless (eq :redshift *pgconn-variant*)

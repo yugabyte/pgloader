@@ -12,7 +12,7 @@
                             disable-triggers
 			    drop-indexes
 
-                            max-parallel-create-index
+                            (max-parallel-create-index 1)
 
                             ;; generic API, but ignored here
                             (worker-count 4)
@@ -125,7 +125,7 @@
                       (lp:end-kernel :wait nil)
                       (return task-count))))
       (lp:end-kernel :wait t))
-
+    
     ;; re-create the indexes from the target table entry
     (create-indexes-again (target-db copy)
                           pgsql-catalog

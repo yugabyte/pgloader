@@ -5,7 +5,7 @@ LOAD CSV
             ts [date format 'MM-DD-YYYY HH24-MI-SS.US'],
             hr [date format 'HH24:MI.SS']
           )
-     INTO postgresql:///pgloader?dateformat ("row num", ts, hr)
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?dateformat ("row num", ts, hr)
 
      WITH truncate,
           fields optionally enclosed by '"',

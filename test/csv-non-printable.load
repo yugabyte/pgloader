@@ -5,7 +5,7 @@
 LOAD CSV
    FROM inline with encoding 'LATIN1'
         HAVING FIELDS ("Some-Field", c2, c3)
-   INTO postgresql:///pgloader
+   INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
    target table tab_csv
         (
           c1 text using "Some-Field", c2, c3

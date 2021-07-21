@@ -21,7 +21,7 @@ LOAD CSV
          intptlong      -- Longitude (decimal degrees)
       )
 
-       INTO postgresql:///pgloader
+       INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader
      TARGET TABLE districts
      TARGET COLUMNS
       (

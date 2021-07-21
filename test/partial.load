@@ -12,9 +12,10 @@
  */
 LOAD CSV
      FROM inline (a, b, c, d, e)
-     INTO postgresql:///pgloader?csv.partial (a, b, c, e)
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?csv.partial (a, b, c, e)
 
      WITH drop indexes,
+          max parallel create index=1,
           fields optionally enclosed by '"',
           fields escaped by double-quote,
           fields terminated by '%'

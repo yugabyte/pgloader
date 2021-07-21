@@ -79,5 +79,6 @@
     (log-message :notice "SKSKSK Executing SQL block for ~a and sql is ~a " label commands)
     (with-pgsql-transaction (:pgconn pgconn)
       (loop :for command :in commands
-         :do (pgsql-execute command :client-min-messages :error)
+            :do (progn (log-message :notice "executing command: ~a" command)
+		       (pgsql-execute command :client-min-messages :error))
          :counting command))))

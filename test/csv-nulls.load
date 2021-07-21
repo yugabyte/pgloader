@@ -1,6 +1,6 @@
 LOAD CSV
      FROM INLINE (id, number [null if '\N'], data)
-     INTO postgresql:///pgloader?nullif
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?nullif
 
      BEFORE LOAD DO
       $$ drop table if exists nullif; $$,

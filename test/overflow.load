@@ -1,6 +1,6 @@
 LOAD CSV
      FROM INLINE with encoding 'ascii'
-     INTO postgresql:///pgloader?overflow
+     INTO postgresql://yugabyte:yugabyte@localhost:5433/pgloader?overflow
 
      WITH truncate,
           fields terminated by ',',
