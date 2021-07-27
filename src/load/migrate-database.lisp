@@ -420,13 +420,13 @@
                                   :set-table-oids set-table-oids
                                   :materialize-views materialize-views)
 	  (when create-tables
-	    :loop
+	    (loop
 	    :for table :in (optimize-table-copy-ordering catalog)
 	    :do
 	       (progn
 		 ;;(log-message :notice "SKSK the table is , creating primary key ~a" table)
 		 (create-primary-key-constraint (target-db copy) table :dumpddl-only dumpddl-only)
-		 ))
+		 )))
 	  
           ;; if there's an AFTER SCHEMA DO/EXECUTE command, now is the time
           ;; to run it.
