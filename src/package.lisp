@@ -755,6 +755,7 @@
   (:export #:mysql-connection
            #:copy-mysql
            #:*decoding-as*
+	   #:*dumpddl-only2*
 	   #:*mysql-default-cast-rules*
            #:with-mysql-connection))
 
@@ -866,6 +867,7 @@
                 #:copy-mysql
                 #:mysql-connection
                 #:*decoding-as*
+		#:*dumpddl-only2*
                 #:*mysql-default-cast-rules*)
   (:import-from #:pgloader.source.mssql
                 #:copy-mssql

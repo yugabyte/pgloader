@@ -293,12 +293,12 @@
 ;;;
 ;;; DDL support with stats (timing, object count)
 ;;;
-(defun pgsql-connect-and-execute-with-timing (pgconn section label sql)
+(defun pgsql-connect-and-execute-with-timing (pgconn section label sql &key dumpddl-only)
   "Run pgsql-execute-with-timing within a newly establised connection."
   (handler-case
       (with-pgsql-connection (pgconn)
         (pomo:with-transaction ()
-          (pgsql-execute-with-timing section label sql :log-level :notice)))
+          (pgsql-execute-with-timing section label sql :log-level :notice :dumpddl-only dumpddl-only)))
 
     (postgresql-unavailable (condition)
 
@@ -309,10 +309,11 @@
      ;; try just too soon, wait a little
       (sleep 2)
 
-      (pgsql-connect-and-execute-with-timing pgconn section label sql))))
+      (pgsql-connect-and-execute-with-timing pgconn section label sql :dumpddl-only dumpddl-only))))
 
 (defun pgsql-execute-with-timing (section label sql-list
                                   &key
+				    dumpddl-only
                                     (log-level :sql)
                                     on-error-stop
                                     client-min-messages)
@@ -322,6 +323,7 @@
         (timing
           (multiple-value-bind (nb-ok nb-errors)
               (pgsql-execute sql-list
+			     :dumpddl-only dumpddl-only
                              :log-level log-level
                              :on-error-stop on-error-stop
                              :client-min-messages client-min-messages)
@@ -385,6 +387,7 @@
 
 (defun pgsql-execute (sql
                       &key
+			(dumpddl-only nil)
                         (log-level :sql)
                         client-min-messages
                         (on-error-stop t))
@@ -394,6 +397,7 @@
    statement that fails. That's because this facility is meant for DDL. With
    ON_ERROR_STOP nil, log the problem and continue thanks to PostgreSQL
    savepoints."
+  
   (let ((sql-list  (alexandria::ensure-list sql))
         (nb-ok     0)
         (nb-errors 0))
@@ -412,7 +416,7 @@
 					 :if-exists :append
 					 :if-does-not-exist :create)
 		      (format str "~a~%" sql))
-                    (pomo:execute sql))
+                    (when (not dumpddl-only) (pomo:execute sql)))
            ;; never executed in case of error, which signals out of here
            :finally (incf nb-ok (length sql-list)))
         ;; handle failures and just continue
@@ -427,7 +431,7 @@
 					    :if-does-not-exist :create)
 			 (format str "~a~%" sql))
                        (log-message log-level "Executing ~a" sql)
-                       (pomo:execute sql)
+                       (when (not dumpddl-only) (pomo:execute sql))
                        ;;(pomo:execute "release savepoint pgloader;")
                        (incf nb-ok))
                    (cl-postgres:database-error (e)
@@ -438,7 +442,7 @@
 
     (when client-min-messages
       (unless (eq :redshift *pgconn-variant*)
-        (pomo:execute (format nil "RESET client_min_messages;"))))
+        (when (not dumpddl-only) (pomo:execute (format nil "RESET client_min_messages;")))))
 
     (values nb-ok nb-errors)))
 

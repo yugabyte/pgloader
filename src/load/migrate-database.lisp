@@ -11,6 +11,7 @@
 (defmethod prepare-pgsql-database ((copy db-copy)
                                    (catalog catalog)
                                    &key
+				     (dumpddl-only nil)
                                      truncate
                                      create-tables
                                      create-schemas
@@ -25,7 +26,7 @@
    tables for materialized views.
 
    That function mutates index definitions in ALL-INDEXES."
-  (log-message :notice "Prepare PostgreSQL database.")
+  (log-message :notice "Prepare PostgreSQL database. ~a" dumpddl-only)
 
   (with-pgsql-transaction (:pgconn (target-db copy))
 
@@ -38,6 +39,7 @@
                                                      :use-result-as-read t
                                                      :use-result-as-rows t)
               (create-schemas catalog
+			      :dumpddl-only dumpddl-only
                               :include-drop drop-schema
                               :client-min-messages :error)))
 
@@ -48,11 +50,13 @@
                                                      :use-result-as-rows t)
             ;; some SQL types come from extensions (ip4r, hstore, etc)
             (create-extensions catalog
+			       :dumpddl-only dumpddl-only
                                :include-drop include-drop
                                :if-not-exists t
                                :client-min-messages :error)
 
             (create-sqltypes catalog
+			     :dumpddl-only dumpddl-only
                              :include-drop include-drop
                              :client-min-messages :error))
 
@@ -61,21 +65,24 @@
                                                   :use-result-as-read t
                                                   :use-result-as-rows t)
             (create-tables catalog
+			   :dumpddl-only dumpddl-only
                            :include-drop include-drop
-                           :client-min-messages :error)))
+                           :client-min-messages :error))
+	  (log-message :notice "Create table finished."))
 
-        (progn
+        (when (not dumpddl-only) (progn
           ;; if we're not going to create the tables, now is the time to
           ;; remove the constraints: indexes, primary keys, foreign keys
           ;;
           ;; to be able to do that properly, get the constraints from
-          ;; the pre-existing target database catalog
-          (let* ((pgversion   (pgconn-major-version (target-db copy)))
+				   ;; the pre-existing target database catalog
+				   (log-message :notice "Fetching the catalog.")
+          (when (not dumpddl-only) (let* ((pgversion   (pgconn-major-version (target-db copy)))
                  (pgsql-catalog
                   (fetch-pgsql-catalog (db-name (target-db copy))
                                        :source-catalog catalog
                                        :pgversion pgversion)))
-            (merge-catalogs catalog pgsql-catalog))
+            (merge-catalogs catalog pgsql-catalog)))
 
           ;; now the foreign keys and only then the indexes, because a
           ;; drop constraint on a primary key cascades to the drop of
@@ -98,19 +105,19 @@
             (with-stats-collection ("Truncate" :section :pre
                                                :use-result-as-read t
                                                :use-result-as-rows t)
-              (truncate-tables catalog)))))
+              (truncate-tables catalog))))))
 
     ;; Some database sources allow the same index name being used
     ;; against several tables, so we add the PostgreSQL table OID in the
     ;; index name, to differenciate. Set the table oids now.
-    (when (and create-tables set-table-oids)
+    (when (and (not dumpddl-only) (and create-tables set-table-oids))
       (with-stats-collection ("Set Table OIDs" :section :pre
                                                :use-result-as-read t
                                                :use-result-as-rows t)
         (set-table-oids catalog :variant (pgconn-variant (target-db copy)))))
 
     ;; We might have to MATERIALIZE VIEWS
-    (when (and create-tables materialize-views)
+    (when (and (not dumpddl-only) (and create-tables materialize-views))
       (with-stats-collection ("Create MatViews Tables" :section :pre
                                                        :use-result-as-read t
                                                        :use-result-as-rows t)
@@ -140,6 +147,7 @@
                                     (catalog catalog)
                                     pkeys
                                     &key
+				      dumpddl-only
                                       foreign-keys
                                       create-indexes
                                       create-triggers
@@ -182,7 +190,7 @@
         ;;
         ;; Triggers and stored procedures -- includes special default values
         ;;
-        (when create-triggers
+        (when (and (not dumpddl-only) create-triggers)
           (create-triggers catalog
                            :section :post
                            :label "Create Triggers"))
@@ -286,6 +294,7 @@
                             (max-parallel-create-index 1)
 			    (truncate         nil)
 			    (disable-triggers nil)
+			    (dumpddl-only        nil)
 			    (data-only        nil)
 			    (schema-only      nil)
                             (create-schemas   t)
@@ -306,11 +315,12 @@
                             alter-schema
 			    materialize-views)
   "Export database source data and Import it into PostgreSQL"
+  
   (log-message :log "Migrating from ~a" (source-db copy))
   (log-message :log "Migrating into ~a" (target-db copy))
   (let* ((*on-error-stop* on-error-stop)
-         (copy-data      (or data-only (not schema-only)))
-         (create-ddl     (or schema-only (not data-only)))
+         (copy-data       (or data-only (not schema-only)))
+         (create-ddl      (or schema-only (not data-only)))
          (create-tables  (and create-tables create-ddl))
          (create-schemas (and create-schemas create-ddl))
          ;; foreign keys has a special meaning in data-only mode
@@ -325,8 +335,7 @@
                              nil
                              (or reindex
                                  (and create-indexes drop-indexes create-ddl))))
-
-         (reset-sequences (if (eq :redshift (pgconn-variant (target-db copy)))
+         (reset-sequences (if (and (not dumpddl-only) (eq :redshift (pgconn-variant (target-db copy))))
                               nil
                               reset-sequences))
 
@@ -401,6 +410,7 @@
           (prepare-pgsql-database copy
                                   catalog
                                   :truncate truncate
+				  :dumpddl-only dumpddl-only
                                   :create-tables create-tables
                                   :create-schemas create-schemas
                                   :drop-indexes drop-indexes
@@ -409,12 +419,13 @@
                                   :foreign-keys foreign-keys
                                   :set-table-oids set-table-oids
                                   :materialize-views materialize-views)
-	  (loop
+	  (when create-tables
+	    loop
 	    :for table :in (optimize-table-copy-ordering catalog)
 	    :do
 	       (progn
-		 (create-primary-key-constraint (target-db copy) table)
-		 ;;(log-message :notice "SKSK the table is ~a" table)
+		 ;;(log-message :notice "SKSK the table is , creating primary key ~a" table)
+		 (create-primary-key-constraint (target-db copy) table :dumpddl-only dumpddl-only)
 		 ))
 	  
           ;; if there's an AFTER SCHEMA DO/EXECUTE command, now is the time
@@ -423,7 +434,8 @@
             (pgloader.parser::execute-sql-code-block (target-db copy)
                                                      :pre
                                                      after-schema
-                                                     "after schema"))
+                                                     "after schema"
+						     :dumpddl-only dumpddl-only))
 	  
 	  (log-message :notice "Done with prepare postgres and executing after-schema"))
       ;;
@@ -445,7 +457,7 @@
 
        :do (let ((table-source (instanciate-table-copy-object copy table)))
              ;; first COPY the data from source to PostgreSQL, using copy-kernel
-             (if (not copy-data)
+             (if (or dumpddl-only (not copy-data))
                  ;; start indexing straight away then
                  (when create-indexes
                    (alexandria:appendf
@@ -453,7 +465,8 @@
                     (create-indexes-in-kernel (target-db copy)
                                               table
                                               idx-kernel
-                                              idx-channel)))
+                                              idx-channel
+					      :dumpddl-only dumpddl-only)))
 
                  ;; prepare the writers-count hash-table, as we start
                  ;; copy-from, we have concurrency tasks writing.
@@ -525,7 +538,8 @@
                 (create-indexes-in-kernel (target-db copy)
                                           table
                                           idx-kernel
-                                          idx-channel)))
+                                          idx-channel
+					  :dumpddl-only dumpddl-only)))
     
     (when create-indexes
       (let ((lp:*kernel* idx-kernel))
@@ -543,7 +557,7 @@
     ;;
     ;; Complete the PostgreSQL database before handing over.
     ;;
-    (complete-pgsql-database copy
+    (when (not dumpddl-only) (complete-pgsql-database copy
                              catalog
                              pkeys
                              :foreign-keys foreign-keys
@@ -553,7 +567,7 @@
                              ;; tables -- otherwise assume the schema is
                              ;; good as it is
                              :create-triggers create-tables
-                             :reset-sequences reset-sequences)
+                             :reset-sequences reset-sequences))
     
     ;;
     ;; Time to cleanup!

@@ -213,6 +213,8 @@ Illegal ~a character starting at position ~a~@[: ~a~].~%"
     (with-connection (*connection* (source-db mysql))
       (drop-matviews materialize-views mysql))))
 
+(defvar *dumpddl-only2* nil
+  "Global variable for dumpddl option")
 (defvar *decoding-as* nil
   "Special per-table encoding/decoding overloading rules for MySQL.")
 

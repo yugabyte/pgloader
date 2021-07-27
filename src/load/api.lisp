@@ -37,7 +37,8 @@
                              materialize-views
                              set-table-oids
                              including
-                             excluding)
+                             excluding
+			     dumpddl-only)
   (:documentation
    "Auto-discover source schema, convert it to PostgreSQL, migrate the data
     from the source definition to PostgreSQL for all the discovered
@@ -52,6 +53,7 @@
 (defgeneric prepare-pgsql-database (db-copy catalog
                                     &key
                                       truncate
+				      dumpddl-only
                                       create-tables
                                       create-schemas
                                       drop-indexes

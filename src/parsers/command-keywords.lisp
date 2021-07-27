@@ -54,6 +54,7 @@
   (def-keyword-rule "resume")
   (def-keyword-rule "next")
   (def-keyword-rule "parameters")
+  (def-keyword-rule "dumpddl-only")
   ;; option for loading from a file
   (def-keyword-rule "workers")
   (def-keyword-rule "batch")
@@ -108,6 +109,8 @@
   (def-keyword-rule "distribute")
   (def-keyword-rule "reference")
   ;; option for MySQL imports
+  (def-keyword-rule "dumpddl-only")
+  (def-keyword-rule "dumpddl")
   (def-keyword-rule "schema")
   (def-keyword-rule "schemas")
   (def-keyword-rule "only")

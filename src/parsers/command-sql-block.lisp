@@ -69,16 +69,16 @@
   (when commands
     `(execute-sql-code-block ,pgconn ,section ',commands ,label)))
 
-(defun execute-sql-code-block (pgconn section commands label)
+(defun execute-sql-code-block (pgconn section commands label &key dumpddl-only)
   "Exceute given SQL commands."
   (with-stats-collection (label
                           :dbname (db-name pgconn)
                           :section section
                           :use-result-as-read t
                           :use-result-as-rows t)
-    (log-message :notice "SKSKSK Executing SQL block for ~a and sql is ~a " label commands)
+    (log-message :notice "Executing SQL block for ~a and sql is ~a " label commands)
     (with-pgsql-transaction (:pgconn pgconn)
       (loop :for command :in commands
             :do (progn (log-message :notice "executing command: ~a" command)
-		       (pgsql-execute command :client-min-messages :error))
+		       (pgsql-execute command :dumpddl-only dumpddl-only :client-min-messages :error))
          :counting command))))

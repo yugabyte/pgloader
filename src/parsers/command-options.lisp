@@ -141,6 +141,9 @@
 (defrule option-drop-schema (and kw-drop kw-schema)
   (:constant (cons :drop-schema t)))
 
+(defrule option-dumpddl-only (and kw-dumpddl kw-only)
+  (:constant (cons :dumpddl-only t)))
+
 (defrule option-reindex (and kw-drop kw-indexes)
   (:constant (cons :reindex t)))
 

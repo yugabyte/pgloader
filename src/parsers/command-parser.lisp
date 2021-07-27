@@ -101,7 +101,7 @@
   (if filename
       (log-message :log "Parsing commands from file ~s~%" filename)
       (error "Can not find file: ~s" maybe-relative-filename))
-
+  
   (process-relative-pathnames
    filename
    (let ((*cwd* (make-pathname :defaults filename :name nil :type nil))
@@ -258,6 +258,7 @@
 
 (defun parse-cli-options (type options)
   "Parse options as per the WITH clause when we get them from the CLI."
+  (log-message :info "Parsing parse-cli-options")
   (alexandria:alist-plist
    (loop :for option :in options
       :collect (parse (ecase type

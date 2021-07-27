@@ -17,7 +17,7 @@
                             ;; generic API, but ignored here
                             (worker-count 4)
                             (concurrency 1)
-
+			    (dumpddl-only nil)
                             data-only
 			    schema-only
                             create-tables

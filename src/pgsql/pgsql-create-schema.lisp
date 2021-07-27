@@ -9,6 +9,7 @@
 ;;;
 (defun create-sqltypes (catalog
                         &key
+			  (dumpddl-only nil)
                           if-not-exists
                           include-drop
                           (client-min-messages :notice))
@@ -18,10 +19,12 @@
        :when include-drop
        :count t
        :do (pgsql-execute (format-drop-sql sqltype :cascade t :if-exists t)
-                          :client-min-messages client-min-messages)
+			  :dumpddl-only dumpddl-only
+			  :client-min-messages client-min-messages)
        :do (pgsql-execute
             (format-create-sql sqltype :if-not-exists if-not-exists)
-            :client-min-messages client-min-messages))))
+	    :dumpddl-only dumpddl-only
+	    :client-min-messages client-min-messages))))
 
 (defun create-table-sql-list (table-list
                               &key
@@ -37,6 +40,7 @@
 
 (defun create-table-list (table-list
                           &key
+			    (dumpddl-only nil)
                             if-not-exists
                             include-drop
                             (client-min-messages :notice))
@@ -47,11 +51,12 @@
                                          :include-drop include-drop)
      :count (not (null sql)) :into nb-tables
      :when sql
-     :do (pgsql-execute sql :client-min-messages client-min-messages)
+       :do (pgsql-execute sql :dumpddl-only dumpddl-only :client-min-messages client-min-messages)
      :finally (return nb-tables)))
 
 (defun create-schemas (catalog
                        &key
+			 (dumpddl-only nil)
                          include-drop
                          (client-min-messages :notice))
   "Create all schemas from the given database CATALOG."
@@ -65,7 +70,7 @@
                             schema-list
                             :test #'string=))
          :do (let ((sql (format nil "DROP SCHEMA ~a CASCADE;" schema-name)))
-               (pgsql-execute sql :client-min-messages client-min-messages))))
+               (pgsql-execute sql :dumpddl-only dumpddl-only :client-min-messages client-min-messages))))
 
     ;; now create the schemas (again?)
     (loop :for schema :in (catalog-schema-list catalog)
@@ -76,7 +81,7 @@
                                    schema-list
                                    :test #'string=))))
        :do (let ((sql (format nil "CREATE SCHEMA ~a;" (schema-name schema))))
-             (pgsql-execute sql :client-min-messages client-min-messages)))))
+             (pgsql-execute sql :dumpddl-only dumpddl-only :client-min-messages client-min-messages)))))
 
 (defun add-to-search-path (catalog
                            &key
@@ -106,6 +111,7 @@
 
 (defun create-extensions (catalog
                           &key
+			    (dumpddl-only nil)
                             if-not-exists
                             include-drop
                             (client-min-messages :notice))
@@ -115,21 +121,26 @@
             :when include-drop
             :collect (format-drop-sql extension :if-exists t :cascade t)
             :collect (format-create-sql extension :if-not-exists if-not-exists))))
-    (pgsql-execute sql :client-min-messages client-min-messages)))
+    (pgsql-execute sql
+		   :dumpddl-only dumpddl-only
+		   :client-min-messages client-min-messages)))
 
 (defun create-tables (catalog
                       &key
+			(dumpddl-only nil)
 			if-not-exists
 			include-drop
 			(client-min-messages :notice))
   "Create all tables from the given database CATALOG."
   (create-table-list (table-list catalog)
+		     :dumpddl-only dumpddl-only
                      :if-not-exists if-not-exists
                      :include-drop include-drop
                      :client-min-messages client-min-messages))
 
 (defun create-views (catalog
                      &key
+		       (dumpddl-only nil)
                        if-not-exists
                        include-drop
                        (client-min-messages :notice))
@@ -141,6 +152,7 @@
 
 (defun create-triggers (catalog
                         &key
+			  (dumpddl-only nil)
                           label
                           (section :post)
                           (client-min-messages :notice))
@@ -227,7 +239,7 @@
                                                             :if-exists t))))))
     (pgsql-execute fk-sql-list :log-level log-level)))
 
-(defun create-pgsql-fkeys (catalog &key (section :post) label log-level)
+(defun create-pgsql-fkeys (catalog &key (section :post) dumpddl-only label log-level)
   "Actually create the Foreign Key References that where declared in the
    MySQL database"
   (let ((fk-sql-list
@@ -254,7 +266,7 @@
 ;;;
 ;;; creating primary key beforehand
 ;;;
-(defun create-primary-key-constraint (pgconn table &key (label "Create primary key"))
+(defun create-primary-key-constraint (pgconn table &key dumpddl-only (label "Create primary key"))
   (loop
     :for index :in (table-index-list table)
     :when (index-primary index)
@@ -267,7 +279,8 @@
 	   (pgloader.parser::execute-sql-code-block pgconn
                                                     :pre
 						    (format-add-primary-key (format-table-name table) (index-columns index))
-                                                    "create primary key"))))
+                                                    "create primary key"
+						    :dumpddl-only dumpddl-only))))
 	   
       	   ;; (log-message :notice "SKSKS creating primary key constraint using index ~a" index))))
 
@@ -283,10 +296,11 @@
 ;;; Parallel index building.
 ;;;
 (defun create-indexes-in-kernel (pgconn table kernel channel
-				 &key (label "Create Indexes"))
+				 &key dumpddl-only (label "Create Indexes"))
   "Create indexes for given table in dbname, using given lparallel KERNEL
    and CHANNEL so that the index build happen in concurrently with the data
    copying."
+  (log-message :notice "The dumpddl-only is ~a" dumpddl-only)
   (let* ((lp:*kernel* kernel))
     (loop
       :for index :in (my-remove-if (table-index-list table))
@@ -298,7 +312,7 @@
                                      #'pgsql-connect-and-execute-with-timing
                                      ;; each thread must have its own connection
                                      (clone-connection pgconn)
-                                     :post label sql)
+                                     :post label sql :dumpddl-only dumpddl-only)
 		     
                      ;; return the pkey "upgrade" statement
                      pkey)
@@ -468,7 +482,7 @@ $$; " tables)))
 	    ;; 
             ;; now get the notification signal
             (cl-postgres:postgresql-notification (c)
-	      (format t "SKSK Caught notification :  ~a~%" c)))))))
+	      (format t "Caught notification :  ~a~%" c)))))))
               ;;(parse-integer (cl-postgres:postgresql-notification-payload c))))))))
 
 

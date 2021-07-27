@@ -7,7 +7,8 @@
 ;;;
 ;;; MySQL options
 ;;;
-(defrule mysql-option (or option-on-error-stop
+(defrule mysql-option (or option-dumpddl-only
+			  option-on-error-stop
                           option-on-error-resume-next
                           option-workers
                           option-concurrency
@@ -179,6 +180,8 @@
             (*decoding-as*        ',decoding-as)
             (*mysql-settings*     ',mysql-gucs)
             (on-error-stop        (getf ',options :on-error-stop t))
+	    (dumpddl-only         (getf ',options :dumpddl-only nil))
+	    (*dumpddl-only2*      (or (getf ',options :dumpddl-only nil) *dumpddl-only2*))
             ,@(pgsql-connection-bindings pg-db-conn gucs)
             ,@(batch-control-bindings options)
             ,@(identifier-case-binding options)
@@ -198,7 +201,9 @@
                       :after-schema ',after-schema
                       :distribute ',distribute
                       :set-table-oids t
+		      :dumpddl-only dumpddl-only
                       :on-error-stop on-error-stop
+		      :dumpddl-only dumpddl-only
                       ,@(remove-batch-control-option options))
 
        ,(sql-code-block pg-db-conn :post after "after load"))))
