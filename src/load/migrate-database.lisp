@@ -420,7 +420,7 @@
                                   :set-table-oids set-table-oids
                                   :materialize-views materialize-views)
 	  (when create-tables
-	    loop
+	    :loop
 	    :for table :in (optimize-table-copy-ordering catalog)
 	    :do
 	       (progn
