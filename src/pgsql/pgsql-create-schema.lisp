@@ -300,7 +300,6 @@
   "Create indexes for given table in dbname, using given lparallel KERNEL
    and CHANNEL so that the index build happen in concurrently with the data
    copying."
-  (log-message :notice "The dumpddl-only is ~a" dumpddl-only)
   (let* ((lp:*kernel* kernel))
     (loop
       :for index :in (my-remove-if (table-index-list table))

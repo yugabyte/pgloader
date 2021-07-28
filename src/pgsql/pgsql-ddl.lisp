@@ -188,7 +188,8 @@
                          ;; in the general case, we build our own index name.
                          (build-identifier "_"
                                            "idx"
-                                           (table-oid (index-table index))
+					   (table-name (index-table index))
+                                          ;; (table-oid (index-table index))
                                            (index-name index)))))
     (cond
       ((or (index-primary index)

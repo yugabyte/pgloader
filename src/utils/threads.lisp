@@ -24,6 +24,7 @@
 
                             ;; needed in create index specific kernels
                             (*pgsql-reserved-keywords* . ',*pgsql-reserved-keywords*)
+			    (*use-tablename-in-index-names* . ',*use-tablename-in-index-names*)
                             (*preserve-index-names* . ,*preserve-index-names*)
                             (*identifier-case*      . ,*identifier-case*)
 

@@ -20,6 +20,7 @@
            #:*pgsql-reserved-keywords*
            #:*identifier-case*
            #:*preserve-index-names*
+	   #:*use-tablename-in-index-names*
 	   #:*copy-batch-rows*
            #:*copy-batch-size*
            #:*rows-per-range*
@@ -126,6 +127,9 @@
 
 (defparameter *preserve-index-names* nil
   "Dealing with source databases index naming.")
+
+(defparameter *use-tablename-in-index-names* nil
+  "Use tablename in the index name while creating index names.")
 
 ;;;
 ;;; How to split batches in case of data loading errors.

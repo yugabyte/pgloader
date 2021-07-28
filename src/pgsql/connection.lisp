@@ -350,12 +350,13 @@
         (loop :for sql :in sql-list
            :do (progn
                  (log-message log-level "~a" sql)
-		 (with-open-file (str "./ddl.sql"
-					    :direction :output
-					    :if-exists :append
-					    :if-does-not-exist :create)
-			 (format str "~a,~%" sql))
-                 (pomo:execute sql))
+		 (if dumpddl-only
+		     (with-open-file (str "./ddl.sql"
+					  :direction :output
+					  :if-exists :append
+					  :if-does-not-exist :create)
+		       (format str "~a,~%" sql))
+                     (pomo:execute sql)))
            ;; never executed in case of error, which signals out of here
            :finally (incf nb-ok (length sql-list)))
         ;; handle failures and just continue
@@ -364,13 +365,15 @@
                  ;; (pomo:execute "savepoint pgloader;")
                  (handler-case
                      (progn
-		       (with-open-file (str "./ddl.sql"
-					    :direction :output
-					    :if-exists :append
-					    :if-does-not-exist :create)
-			 (format str "~a,~%" sql))
-                       (log-message log-level "EXECUTIN THE sql in transaction ~a" sql)
-                       (pomo:execute sql)
+		       (log-message log-level "EXECUTIN THE sql in transaction ~a" sql)
+		       
+		       (if dumpddl-only
+			   (with-open-file (str "./ddl.sql"
+						:direction :output
+						:if-exists :append
+						:if-does-not-exist :create)
+			     (format str "~a,~%" sql))
+			   (pomo:execute sql))
                        ;;(pomo:execute "release savepoint pgloader;")
                        (incf nb-ok))
                    (cl-postgres:database-error (e)
@@ -411,12 +414,13 @@
         (loop :for sql :in sql-list
               :do (progn
 		    (log-message log-level "Executing ~a" sql)
-                    (with-open-file (str "./ddl.sql"
-					 :direction :output
-					 :if-exists :append
-					 :if-does-not-exist :create)
-		      (format str "~a~%" sql))
-                    (when (not dumpddl-only) (pomo:execute sql)))
+                    (if dumpddl-only
+			(with-open-file (str "./ddl.sql"
+					     :direction :output
+					     :if-exists :append
+					     :if-does-not-exist :create)
+			  (format str "~a~%" sql))
+			(pomo:execute sql)))
            ;; never executed in case of error, which signals out of here
            :finally (incf nb-ok (length sql-list)))
         ;; handle failures and just continue
@@ -425,13 +429,14 @@
                  ;; (pomo:execute "savepoint pgloader;")
                  (handler-case
                      (progn
-		       (with-open-file (str "./ddl.sql"
-					    :direction :output
-					    :if-exists :append
-					    :if-does-not-exist :create)
-			 (format str "~a~%" sql))
-                       (log-message log-level "Executing ~a" sql)
-                       (when (not dumpddl-only) (pomo:execute sql))
+		       (log-message log-level "Executing ~a" sql)
+		       (if dumpddl-only
+			   (with-open-file (str "./ddl.sql"
+						:direction :output
+						:if-exists :append
+						:if-does-not-exist :create)
+			     (format str "~a~%" sql))
+			   (pomo:execute sql))
                        ;;(pomo:execute "release savepoint pgloader;")
                        (incf nb-ok))
                    (cl-postgres:database-error (e)
