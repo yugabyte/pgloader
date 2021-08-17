@@ -468,7 +468,7 @@ $$; " tables)))
 	    ;; 
             ;; now get the notification signal
             (cl-postgres:postgresql-notification (c)
-	      (format t "SKSK Caught notification :  ~a~%" c)))))))
+	      (format t "Caught notification :  ~a~%" c)))))))
               ;;(parse-integer (cl-postgres:postgresql-notification-payload c))))))))
 
 
