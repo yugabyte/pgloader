@@ -172,7 +172,8 @@
         ;;
         (when create-indexes
           (pgsql-execute-with-timing :post "Primary Keys" pkeys
-                                     :log-level :notice))
+                                     :log-level :notice
+				     :dumpddl-only dumpddl-only))
 
         ;;
         ;; Foreign Key Constraints
@@ -185,7 +186,8 @@
           (create-pgsql-fkeys catalog
                               :section :post
                               :label "Create Foreign Keys"
-                              :log-level :notice))
+                              :log-level :notice
+			      :dumpddl-only dumpddl-only))
 
         ;;
         ;; Triggers and stored procedures -- includes special default values

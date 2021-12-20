@@ -260,7 +260,7 @@
                               :do (log-message :debug "EXTRA FK DEPS! ~a" sql)
                               :collect sql)))))
     ;; and now execute our list
-    (pgsql-execute-with-timing section label fk-sql-list :log-level log-level)))
+    (pgsql-execute-with-timing section label fk-sql-list :log-level log-level :dumpddl-only dumpddl-only)))
 
 
 ;;;
